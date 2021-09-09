@@ -1,6 +1,13 @@
 /**
  * Creates two layers, and a brush, and draws a line in each layer.
  * Then, draw the two layers each time draw() is called.
+ *
+ * This exampole sketch demonstrates a bug in Processing.
+ * @see https://discourse.processing.org/t/compositing-of-two-blurred-shapes-drawn-into-pgraphics/1174
+ * @see https://github.com/processing/processing/issues/3391
+ *
+ * There is a grey halo around the shapes drawn in a PGraphics when that PGraphics
+ * has some transparency around the shapes in it.
  */
 PGraphics layer1;
 PGraphics layer2;
@@ -13,9 +20,11 @@ void setup() {
   size(720, 720, P2D);
   layer1 = createLayer();
   layer2 = createLayer();
-  brush1 = createBrush();
+  // Pick either version of the brush factory:
+  // brush1 = createBrush();
+  brush1 = createBrush2();
   // Fill each layer with a long diagonal stroke.
-  final int spaceBetweenBrushes = 10;
+  final int spaceBetweenBrushes = 20;
   for (int x = 0; x < width; x += spaceBetweenBrushes) {
     int y = x;
     drawInLayer(layer1, brush1, x, y, color(255, 127, 0, 255));
@@ -68,7 +77,8 @@ PGraphics createLayer() {
 }
 
 /**
- * Create a brush that is a circular gradient.
+ * Creates a brush that is a circular gradient.
+ * (version 1)
  */
 PGraphics createBrush() {
   final int brushWidth = 100;
@@ -89,5 +99,31 @@ PGraphics createBrush() {
     }
   }
   brush.updatePixels();
+  return brush;
+}
+
+/**
+ * Creates a brush that is a circular gradient.
+ * (version 2)
+ */
+PGraphics createBrush2() {
+  final int brushWidth = 100;
+  final int brushHeight = brushWidth;
+  final color background_color = color(0, 0, 0, 0); // transparent black
+  PGraphics brush = createGraphics(brushWidth, brushHeight, P2D);
+  brush.beginDraw();
+  brush.noStroke();
+  brush.ellipseMode(CENTER);
+  // brush.background(background_color);
+  final int centerX = brushWidth / 2;
+  final int centerY = brushHeight / 2;
+  final int step = 3;
+  for (int circleSize = brushWidth; circleSize >= 0; circleSize -= step) {
+    int currentAlpha = (int) map(circleSize, 0, brushWidth, 255, 0);
+    color currentColor = color(255, 255, 255, currentAlpha);
+    brush.fill(currentColor);
+    brush.ellipse(centerX, centerY, circleSize, circleSize);
+  }
+  brush.endDraw();
   return brush;
 }
